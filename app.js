@@ -25,6 +25,7 @@ app.post('/login-with-mpin', async (req, res) => {
     const { context } = browserInstances[userId];
     const page = await context.newPage();
     await page.goto('https://web.umang.gov.in/web_new/login'); // Replace with the actual login URL
+
     // Fill out the login form
     await page.fill("input[formcontrolname='mob']", mobile);
     await page.fill("input[formcontrolname='mpin']", mpin);
@@ -55,11 +56,11 @@ app.post('/login-with-mpin', async (req, res) => {
     //   await page.waitForSelector("#otpField"); // Assume OTP input field is present after login
     return res.json({
       success: true,
+      userId,
       message: 'Login unsuccessful',
       data: {
         session: {
           mobile,
-          userId,
           page,
         },
       },
@@ -68,6 +69,70 @@ app.post('/login-with-mpin', async (req, res) => {
     console.log(error);
   }
 });
+
+app.post('/search-raise-claim', async (req, res) => {
+  const { userId } = req.body;
+  // Ensure the user has an active session (browser instance)
+  if (!browserInstances[userId]) {
+    return res.status(400).send('User session not found');
+  }
+  const { context } = browserInstances[userId];
+  const page = await context.pages()[0];
+
+  await page.fill('div.search-input-wrap input', 'raise claim');
+  await page.keyboard.press('Enter');
+
+  await page.waitForTimeout(1000);
+
+  res.json({
+    success: true,
+    userId,
+    message: 'Raise Claim searched successfully',
+    data: {
+      session: {
+        page,
+      },
+    },
+  });
+});
+
+app.post('/click-raise-claim-without-iframe', async (req, res) => {
+  const { userId } = req.body;
+  // Ensure the user has an active session (browser instance)
+  if (!browserInstances[userId]) {
+    return res.status(400).send('User session not found');
+  }
+  const { context } = browserInstances[userId];
+  const page = await context.pages()[0];
+
+  // Find the Raise Claim text inside the iframe and click it
+  const raiseClaimTextLocators = await page.locator('text=Raise Claim');
+  const raiseClaimTextLocatorsCount = await raiseClaimTextLocators.count();
+
+  console.log('**********');
+  console.log('raiseClaimTextLocatorsCount', raiseClaimTextLocatorsCount);
+  console.log('**********');
+  for (let i = 0; i < raiseClaimTextLocatorsCount; i++) {
+    const button = raiseClaimTextLocators.nth(i);
+    const text = await button.textContent();
+    if (text.trim() === 'Raise Claim') {
+      console.log('Found the raise claim button!');
+      await button.click();
+      break;
+    }
+  }
+  res.json({
+    success: true,
+    message: 'Clicked Raise Claim without iframe successfully',
+    data: {
+      session: {
+        userId,
+        page,
+      },
+    },
+  });
+});
+
 // Endpoint to handle API 2 (click-epfo)
 app.post('/click-epfo', async (req, res) => {
   const { userId } = req.body;
@@ -151,10 +216,9 @@ app.post('/click-raise-claim', async (req, res) => {
 });
 
 app.post('/click-uan', async (req, res) => {
-  const { userId, uan } = req.body;
+  const { userId } = req.body;
   console.log('**********');
   console.log('userId', userId);
-  console.log('uan', uan);
   console.log('**********');
   // Ensure the user has an active session (browser instance)
   if (!browserInstances[userId]) {
@@ -166,9 +230,9 @@ app.post('/click-uan', async (req, res) => {
   let iframeElement = await page.locator('iframe'); // You can specify a more precise selector if needed
   // Get the content frame of the iframe
   let iframe = await iframeElement.contentFrame();
-  const inputLocator = await iframe.locator("input[formcontrolname='uan']");
-  await inputLocator.fill(uan);
+
   let buttons = await iframe.locator('button');
+
   // Loop through and filter buttons by text
   let buttonsCount = await buttons.count();
   console.log('**********');
