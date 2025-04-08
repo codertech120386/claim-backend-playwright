@@ -368,6 +368,142 @@ app.post('/submit-account-number', async (req, res) => {
   });
 });
 
+app.post('/submit-service-details', async (req, res) => {
+  const { userId } = req.body;
+  console.log('**********');
+  console.log('userId', userId);
+  console.log('**********');
+  // Ensure the user has an active session (browser instance)
+  if (!browserInstances[userId]) {
+    return res.status(400).send('User session not found');
+  }
+  const { context } = browserInstances[userId];
+  const page = await context.pages()[0];
+  // Locate the iframe element
+  let iframeElement = await page.locator('iframe'); // You can specify a more precise selector if needed
+  // Get the content frame of the iframe
+  let iframe = await iframeElement.contentFrame();
+
+  let buttons = await iframe.locator('button');
+
+  // Loop through and filter buttons by text
+  let buttonsCount = await buttons.count();
+  console.log('**********');
+  console.log('buttonsCount', buttonsCount);
+  console.log('**********');
+  for (let i = 0; i < buttonsCount; i++) {
+    const button = buttons.nth(i);
+    const text = await button.textContent();
+    console.log('**********');
+    console.log('text', text);
+    console.log('**********');
+    if (text.trim() === 'Next') {
+      // Perform your action on the login button
+      console.log('Found the Next button!');
+      // You can click the button or perform other actions here
+      await button.click();
+      break; // Exit the loop after finding the button
+    }
+  }
+
+  res.json({
+    success: true,
+    message: 'Submit Service Details successful',
+    data: {
+      session: {
+        userId,
+        page,
+      },
+    },
+  });
+});
+
+app.post('/submit-address-details', async (req, res) => {
+  const { userId, locality, state, district, city, pinCode } = req.body;
+  console.log('**********');
+  console.log('userId', userId);
+  console.log('locality', locality);
+  console.log('state', state);
+  console.log('district', userId);
+  console.log('city', city);
+  console.log('pinCode', pinCode);
+  console.log('**********');
+  // Ensure the user has an active session (browser instance)
+  if (!browserInstances[userId]) {
+    return res.status(400).send('User session not found');
+  }
+  const { context } = browserInstances[userId];
+  const page = await context.pages()[0];
+  // Locate the iframe element
+  let iframeElement = await page.locator('iframe'); // You can specify a more precise selector if needed
+  // Get the content frame of the iframe
+  let iframe = await iframeElement.contentFrame();
+
+  // Locality
+  const localityLocator = await iframe.locator(
+    "input[formcontrolname='locality']"
+  );
+  await localityLocator.fill(locality);
+
+  // City
+  const cityLocator = await iframe.locator("input[formcontrolname='city']");
+  await cityLocator.fill(city);
+
+  // Pin code
+  const pinCodeLocator = await iframe.locator(
+    "input[formcontrolname='pinCode']"
+  );
+  await pinCodeLocator.fill(pinCode);
+
+  let spans = await iframe.locator('span.mat-select-min-line');
+
+  // Loop through and filter buttons by text
+  let spansCount = await spans.count();
+  console.log('**********');
+  console.log('spansCount', spansCount);
+  console.log('**********');
+  for (let i = 0; i < spansCount; i++) {
+    const span = spans.nth(i);
+    if (i === 0) {
+      span.innerHtml = state;
+    } else if (i === 0) {
+      span.innerHtml = district;
+    }
+  }
+  let buttons = await iframe.locator('button');
+
+  // Loop through and filter buttons by text
+  let buttonsCount = await buttons.count();
+  console.log('**********');
+  console.log('buttonsCount', buttonsCount);
+  console.log('**********');
+  for (let i = 0; i < buttonsCount; i++) {
+    const button = buttons.nth(i);
+    const text = await button.textContent();
+    console.log('**********');
+    console.log('text', text);
+    console.log('**********');
+    if (text.trim() === 'Next') {
+      // Perform your action on the login button
+      console.log('Found the Next button!');
+      // You can click the button or perform other actions here
+      await button.click();
+      break; // Exit the loop after finding the button
+    }
+  }
+
+  res.json({
+    success: true,
+    message: 'Submit Service Details successful',
+    data: {
+      session: {
+        userId,
+        page,
+      },
+    },
+  });
+});
+
 // Server setup
 app.listen(3000, () => {
   console.log('Server running on port 3000');
